@@ -1,13 +1,14 @@
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useContext } from 'react';
-import ApiContext from './ApiContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useContext, useState } from 'react' 
+import ApiContext from './ApiContext'
+import { useNavigate } from 'react-router-dom';
 
 export default function Register() {
   const api = useContext(ApiContext);
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const schema = z.object({
     email: z.email().min(5, "Email is required"),
@@ -19,74 +20,75 @@ export default function Register() {
   });
 
   const onSubmit = (data) => {
+    setIsLoading(true); 
+    
     fetch(`${api.url}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(async (result) => {
+    })
+    .then(async (result) => {
+      const json = await result.json().catch(() => ({})); 
+
       if (result.status === 201) {
         navigate('/verify', { state: { email: data.email }, replace: true });
       } else {
-        const json = await result.json();
         alert(json.message || 'Registration failed');
+        setIsLoading(false); 
       }
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Network Error. Backend might be sleeping (wait 30s) or URL is wrong.");
+      setIsLoading(false);
     });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-        <div className="text-center">
-          <h2 className="mt-2 text-3xl font-extrabold text-gray-900">Create Account</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Join us to manage your orders easily
-          </p>
-        </div>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="max-w-md mx-auto p-4 bg-white shadow-md rounded-md space-y-6 mt-10"
+    >
+      <h2 className="text-xl font-bold text-center">Register</h2>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email Address</label>
-              <input
-                type="email"
-                {...register('email')}
-                className={`mt-1 block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                placeholder="you@example.com"
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                {...register('password')}
-                className={`mt-1 block w-full px-3 py-2 border ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                placeholder="••••••••"
-              />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-colors"
-          >
-            Sign Up
-          </button>
-
-          <div className="text-center text-sm">
-            <span className="text-gray-500">Already have an account? </span>
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in instead
-            </Link>
-          </div>
-        </form>
+      <div>
+        <label className="block mb-1 font-semibold">Email</label>
+        <input
+          type="email"
+          {...register('email')}
+          className={`w-full px-3 py-2 border rounded ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+        />
+        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
       </div>
-    </div>
+
+      <div>
+        <label className="block mb-1 font-semibold">Password</label>
+        <input
+          type="password"
+          {...register('password')}
+          className={`w-full px-3 py-2 border rounded ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+        />
+        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+      </div>
+
+      <div className="flex gap-4">
+        <button
+          type="button" 
+          onClick={() => navigate('/login')}
+          className="w-1/3 bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition"
+          disabled={isLoading}
+        >
+          Back
+        </button>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`w-2/3 text-white py-2 rounded transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+        >
+          {isLoading ? 'Processing...' : 'Register'}
+        </button>
+      </div>
+    </form>
   );
 }
