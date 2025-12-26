@@ -1,0 +1,2 @@
+### While reserving the features of the order management website, this project uses RAM of the server for convenient purposes. 
+### OTP activation and navigation between pages have been properly deployed.
